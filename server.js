@@ -10,7 +10,7 @@ app.use(cors({
     origin: [
         'http://127.0.0.1:5500',
         'http://localhost:5500',
-        'https://studentphere0.netlify.app'
+        'https://studentsphere0.netlify.app'
     ],
     credentials: true
 }));
