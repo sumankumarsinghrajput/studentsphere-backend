@@ -1,12 +1,16 @@
-const jwt = require('jsonwebtoken');
+const jwt  = require('jsonwebtoken');
+const User = require('../models/User');
 
-module.exports = (requiredRole) => (req, res, next) => {
+module.exports = (requiredRole) => async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ msg: 'No token, access denied' });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    if (requiredRole && decoded.role !== requiredRole)
+    // Attach full email too for data routes
+    const user = await User.findById(decoded.id, '-password');
+    if (!user) return res.status(401).json({ msg: 'User not found' });
+    req.user = { id: user._id, role: user.role, email: user.email };
+    if (requiredRole && user.role !== requiredRole)
       return res.status(403).json({ msg: 'Access forbidden' });
     next();
   } catch {
