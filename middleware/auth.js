@@ -6,7 +6,6 @@ module.exports = (requiredRole) => async (req, res, next) => {
   if (!token) return res.status(401).json({ msg: 'No token, access denied' });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // Attach full email too for data routes
     const user = await User.findById(decoded.id, '-password');
     if (!user) return res.status(401).json({ msg: 'User not found' });
     req.user = { id: user._id, role: user.role, email: user.email };

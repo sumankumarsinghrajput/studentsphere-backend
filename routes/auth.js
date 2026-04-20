@@ -3,7 +3,6 @@ const jwt     = require('jsonwebtoken');
 const User    = require('../models/User');
 const router  = express.Router();
 
-// ── Seed admin on first run ──
 async function seedAdmin() {
   const exists = await User.findOne({ email: 'admin@studentsphere.com' });
   if (!exists) {
@@ -19,29 +18,6 @@ async function seedAdmin() {
 }
 seedAdmin();
 
-// ── Register ──
-router.post('/register', async (req, res) => {
-  try {
-    const { name, email, password, role, semester } = req.body;
-    if (!name || !email || !password || !role || !semester)
-      return res.status(400).json({ msg: 'All fields are required.' });
-    if (password.length < 6)
-      return res.status(400).json({ msg: 'Password must be at least 6 characters.' });
-    if (!['student','faculty'].includes(role))
-      return res.status(400).json({ msg: 'Invalid role.' });
-
-    const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ msg: 'An account with this email already exists.' });
-
-    await User.create({ name, email, password, role, semester });
-    res.status(201).json({ msg: 'Account created successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
-  }
-});
-
-// ── Login ──
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
