@@ -1,16 +1,16 @@
 const express = require('express');
-const jwt     = require('jsonwebtoken');
-const User    = require('../models/User');
-const router  = express.Router();
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const router = express.Router();
 
 async function seedAdmin() {
   const exists = await User.findOne({ email: 'admin@studentsphere.com' });
   if (!exists) {
     await User.create({
-      name:     'Administrator',
-      email:    'admin@studentsphere.com',
+      name: 'Administrator',
+      email: 'admin@studentsphere.com',
       password: 'admin123',
-      role:     'admin',
+      role: 'admin',
       semester: null
     });
     console.log('Admin account seeded');
@@ -39,12 +39,48 @@ router.post('/login', async (req, res) => {
     res.json({
       token,
       user: {
-        name:     user.name,
-        email:    user.email,
-        role:     user.role,
+        name: user.name,
+        email: user.email,
+        role: user.role,
         semester: user.semester
       }
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// ── Register ──
+router.post('/register', async (req, res) => {
+  try {
+    const { name, email, password, role, semester } = req.body;
+
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ msg: 'All fields are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ msg: 'Password must be at least 6 characters' });
+    }
+
+    const exists = await User.findOne({ email: email.toLowerCase().trim() });
+    if (exists) {
+      return res.status(400).json({ msg: 'Email already registered' });
+    }
+
+    const user = await User.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password,
+      role,
+      semester
+    });
+
+    res.status(201).json({
+      msg: 'Account created successfully'
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: 'Server error' });
