@@ -1,11 +1,26 @@
 const mongoose = require('mongoose');
 
 const itemSchema = new mongoose.Schema({
-  text:     String,
-  date:     String,
-  fileName: String,
-  fileData: String,
-  fileSize: Number
+  text:      String,
+  date:      String,
+  fileName:  String,
+  fileData:  String,
+  fileSize:  Number,
+  // ── Assignment extras ──
+  dueDate:   { type: String, default: null },          // ISO date string set by faculty
+  allowLate: { type: Boolean, default: false }         // faculty toggle
+});
+
+const submissionSchema = new mongoose.Schema({
+  assignmentId: String,                                // matches itemSchema _id
+  assignmentTitle: String,
+  studentEmail: String,
+  studentName:  String,
+  fileName:     String,
+  fileData:     String,
+  fileSize:     Number,
+  submittedAt:  { type: Date, default: Date.now },
+  status:       { type: String, enum: ['submitted','late'], default: 'submitted' }
 });
 
 const dataSchema = new mongoose.Schema({
@@ -14,7 +29,8 @@ const dataSchema = new mongoose.Schema({
   marks:       { type: Number, default: null },
   notes:       [itemSchema],
   assignments: [itemSchema],
-  lab:         [itemSchema]
+  lab:         [itemSchema],
+  submissions: [submissionSchema]                      // student file submissions
 });
 
 module.exports = mongoose.model('Data', dataSchema);
