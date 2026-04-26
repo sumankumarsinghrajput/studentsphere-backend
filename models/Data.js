@@ -12,8 +12,11 @@ const itemSchema = new mongoose.Schema({
 });
 
 const submissionSchema = new mongoose.Schema({
-  assignmentId: String,                                // matches itemSchema _id
-  assignmentTitle: String,
+  type:         { type: String, enum: ['assignment','lab'], default: 'assignment' }, // submission type
+  itemId:       String,                                // matches itemSchema _id (new field)
+  itemTitle:    String,                                // title (new field)
+  assignmentId: String,                                // legacy: matches itemSchema _id
+  assignmentTitle: String,                             // legacy
   studentEmail: String,
   studentName:  String,
   fileName:     String,

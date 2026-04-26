@@ -114,10 +114,29 @@ router.delete('/assignments/:email/:index', protect(), async (req, res) => {
 router.post('/lab', protect(), async (req, res) => {
   try {
     if (req.user.role === 'student') return res.status(403).json({ msg: 'Access forbidden' });
-    const { email, text, fileName, fileData, fileSize } = req.body;
-    const item = { text, date: new Date().toISOString(), fileName, fileData, fileSize };
+    const { email, text, fileName, fileData, fileSize, dueDate, allowLate } = req.body;
+    const item = {
+      text, date: new Date().toISOString(),
+      fileName, fileData, fileSize,
+      dueDate: dueDate || null,
+      allowLate: allowLate || false
+    };
     await Data.findOneAndUpdate({ email }, { $push: { lab: item } }, { upsert: true, new: true });
     res.json({ msg: 'Lab report added' });
+  } catch (err) { res.status(500).json({ msg: 'Server error' }); }
+});
+
+// ── UPDATE lab dueDate / allowLate ──
+router.put('/lab/:email/:index', protect(), async (req, res) => {
+  try {
+    if (req.user.role === 'student') return res.status(403).json({ msg: 'Access forbidden' });
+    const data = await Data.findOne({ email: req.params.email });
+    if (!data) return res.status(404).json({ msg: 'Not found' });
+    const idx = parseInt(req.params.index);
+    if (req.body.dueDate   !== undefined) data.lab[idx].dueDate   = req.body.dueDate;
+    if (req.body.allowLate !== undefined) data.lab[idx].allowLate = req.body.allowLate;
+    await data.save();
+    res.json({ msg: 'Lab report updated' });
   } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
@@ -133,11 +152,16 @@ router.delete('/lab/:email/:index', protect(), async (req, res) => {
   } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
-// ── STUDENT: Submit assignment ──
+// ── STUDENT: Submit assignment or lab ──
 router.post('/submit', protect('student'), async (req, res) => {
   try {
-    const { assignmentId, assignmentTitle, fileName, fileData, fileSize, dueDate } = req.body;
+    const { type, itemId, itemTitle, assignmentId, assignmentTitle, fileName, fileData, fileSize, dueDate } = req.body;
     if (!fileData) return res.status(400).json({ msg: 'No file provided' });
+
+    // Support both old (assignmentId/assignmentTitle) and new (type/itemId/itemTitle) payload shapes
+    const resolvedType    = type || 'assignment';
+    const resolvedItemId  = itemId || assignmentId;
+    const resolvedTitle   = itemTitle || assignmentTitle;
 
     // Determine if late
     let status = 'submitted';
@@ -147,8 +171,12 @@ router.post('/submit', protect('student'), async (req, res) => {
     }
 
     const sub = {
-      assignmentId,
-      assignmentTitle,
+      type:         resolvedType,
+      itemId:       resolvedItemId,
+      itemTitle:    resolvedTitle,
+      // Legacy fields for backward compat
+      assignmentId: resolvedItemId,
+      assignmentTitle: resolvedTitle,
       studentEmail: req.user.email,
       studentName:  req.user.name || '',
       fileName,
