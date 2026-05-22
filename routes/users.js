@@ -128,6 +128,39 @@ router.get('/me', protect(), async (req, res) => {
   }
 });
 
+// ── PUT /users/me/profile — update own profile ──
+router.put('/me/profile', protect(), async (req, res) => {
+  try {
+    const allowed = [
+      'phone','gender','dob','address','bio',
+      'rollNumber','department',           // student
+      'facultyId','subject','qualification','experience',  // faculty
+      'profileImage'                       // both
+    ];
+    const updates = {};
+    allowed.forEach(field => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
+    const user = await User.findByIdAndUpdate(req.user.id, { $set: updates }, { new: true, select: '-password' });
+    res.json({ msg: 'Profile updated', user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// ── GET /users/profile/:id — get any user's profile (faculty/admin) ──
+router.get('/profile/:id', protect(), async (req, res) => {
+  try {
+    if (req.user.role === 'student') return res.status(403).json({ msg: 'Access forbidden' });
+    const user = await User.findById(req.params.id, '-password');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 // ── PUT /users/:id/semester — update semester ──
 router.put('/:id/semester', protect(), async (req, res) => {
   try {
